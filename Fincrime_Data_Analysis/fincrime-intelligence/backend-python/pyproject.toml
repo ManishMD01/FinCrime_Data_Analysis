@@ -1,0 +1,15 @@
+[project]
+name = "backend-python"
+version = "0.1.0"
+description = "Fincrime Intelligence backend"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "pydantic",
+  "google-cloud-bigquery",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
