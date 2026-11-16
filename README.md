@@ -35,13 +35,13 @@ Fincrime Intelligence is an end-to-end platform that combines rule-based detecti
 - **FastAPI** - High-performance async API framework
 - **Google Cloud BigQuery** - Data warehouse for transaction analytics
 - **scikit-learn / XGBoost** - ML model training and inference
-- **Pydantic** - Data validation and serialization
+- **Pydantic v2** - Data validation and serialization (with pydantic-settings)
 - **Uvicorn** - ASGI server
 
 ### Frontend (PHP)
-- **PHP 8.1+** - Server-side rendering
-- **Composer** - Dependency management
-- **Vanilla JS/CSS** - Lightweight frontend interactions
+- **PHP 8.2+** - Server-side rendering with PSR-4 autoloading
+- **Vanilla JS/CSS** - Lightweight frontend interactions (Chart.js for visualizations)
+- **Apache** - Web server with mod_rewrite
 
 ### Infrastructure
 - **Docker & Docker Compose** - Container orchestration
@@ -81,15 +81,25 @@ FinCrime_Data_Analysis/
 │   └── infra/docker/Dockerfile.python
 │
 ├── frontend-php/            # PHP web frontend
-│   ├── public/index.php     # Entry point
+│   ├── public/
+│   │   ├── index.php        # Entry point with routing
+│   │   ├── assets/
+│   │   │   ├── css/style.css
+│   │   │   └── js/app.js
 │   ├── app/
 │   │   ├── views/           # Dashboard views
 │   │   │   ├── dashboard.php
 │   │   │   ├── transactions.php
 │   │   │   ├── fraud-analytics.php
 │   │   │   ├── investigations.php
-│   │   │   └── network-analysis.php
-│   │   └── Controllers/
+│   │   │   ├── network-analysis.php
+│   │   │   └── layouts/main.php
+│   │   ├── Controllers/
+│   │   │   ├── DashboardController.php
+│   │   │   ├── TransactionsController.php
+│   │   │   ├── FraudAnalyticsController.php
+│   │   │   ├── InvestigationsController.php
+│   │   │   └── NetworkAnalysisController.php
 │   ├── composer.json
 │   └── infra/docker/Dockerfile.php
 │
@@ -101,6 +111,10 @@ FinCrime_Data_Analysis/
 │   ├── data_dictionary.md
 │   ├── ml_model_card.md
 │   └── security.md
+│
+├── scripts/                 # Utility scripts
+│   ├── install.sh           # Automated installation
+│   └── uninstall.sh         # Clean uninstallation
 │
 ├── docker-compose.yml       # Local development stack
 ├── .env.example             # Environment template
@@ -117,21 +131,22 @@ FinCrime_Data_Analysis/
 - Structuring/smurfing pattern detection
 
 ### Detection Engine
-- **Rule-based Detection**: Configurable rules for known fraud patterns
+- **Rule-based Detection**: Configurable rules for known fraud patterns (high-value, velocity, structuring)
 - **Anomaly Detection**: Statistical and ML-based outlier detection
 - **Network Analysis**: Entity relationship graphs for money laundering detection
 
 ### Machine Learning
 - Feature engineering pipeline for transaction data
-- Model training with cross-validation
+- Model training with cross-validation (XGBoost, Random Forest, Neural Networks)
 - Automated model evaluation and registry
 - Batch and real-time inference endpoints
 
 ### Analytics & Dashboards
-- Transaction volume and value summaries
-- Fraud rate trends and KPIs
-- Network visualization for investigations
-- Case management for investigators
+- **Dashboard**: Real-time stats cards, 7-day transaction volume chart, recent transactions table
+- **Transactions**: Filterable transaction list with date range, type, and status filters
+- **Fraud Analytics**: Fraud rate trend charts, fraud type distribution, risk indicators, model performance comparison
+- **Investigations**: Case management with status/priority tracking, assignee filters
+- **Network Analysis**: Interactive network graph visualization, suspicious cluster detection, entity search
 
 ### Batch Processing
 - Daily ETL pipelines via Airflow
@@ -143,29 +158,43 @@ FinCrime_Data_Analysis/
 
 ### Prerequisites
 - Docker & Docker Compose v2+
-- Google Cloud Project with BigQuery API enabled
-- GCP Service Account with BigQuery permissions
+- Google Cloud Project with BigQuery API enabled (for production)
+- GCP Service Account with BigQuery permissions (for production)
 
-### Installation
+### Quick Install (Recommended)
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd FinCrime_Data_Analysis
-   ```
+```bash
+# Clone the repository
+git clone <repository-url>
+cd FinCrime_Data_Analysis
 
-2. **Configure environment**
+# Run automated installer
+./install.sh
+```
+
+The installer will:
+1. Check Docker/Docker Compose availability
+2. Create `.env` from `.env.example`
+3. Build Docker images
+4. Start all services
+5. Verify health checks
+6. Print service URLs
+
+### Manual Installation
+
+1. **Configure environment**
    ```bash
    cp .env.example .env
    # Edit .env with your GCP credentials and project settings
    ```
 
-3. **Start the stack**
+2. **Build and start services**
    ```bash
-   docker-compose up -d
+   docker compose build
+   docker compose up -d
    ```
 
-4. **Access services**
+3. **Access services**
    - Frontend: http://localhost:8080
    - Backend API: http://localhost:8000
    - API Health Check: http://localhost:8000/health
@@ -190,7 +219,7 @@ php -S localhost:8080 -t public
 **Airflow**
 ```bash
 # Airflow runs in Docker; DAGs in ./dags are auto-discovered
-docker-compose logs -f airflow-webserver
+docker compose logs -f airflow-webserver
 ```
 
 ## API Endpoints
@@ -198,11 +227,26 @@ docker-compose logs -f airflow-webserver
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Health check |
+| GET | `/api/contract/fields` | List contract field definitions |
+| GET | `/api/contract/required` | List required fields |
 | GET | `/api/transactions` | List transactions |
 | GET | `/api/analytics/summary` | Analytics summary |
 | POST | `/api/detection/rules` | Run rule-based detection |
 | GET | `/api/network/graph` | Network graph data |
 | POST | `/api/models/train` | Trigger model training |
+| GET | `/api/contract/mapping/{table_id}` | Get column mapping |
+| PUT | `/api/contract/mapping/{table_id}` | Set column mapping |
+| GET | `/api/contract/mapping/{table_id}/resolve` | Generate resolved SQL query |
+
+## Frontend Pages
+
+| Page | URL | Description |
+|------|-----|-------------|
+| Dashboard | http://localhost:8080/ | Stats, charts, recent transactions |
+| Transactions | http://localhost:8080/transactions | Filterable transaction table |
+| Fraud Analytics | http://localhost:8080/fraud-analytics | Fraud trends, risk indicators, models |
+| Investigations | http://localhost:8080/investigations | Case management |
+| Network Analysis | http://localhost:8080/network-analysis | Network graph, clusters, search |
 
 ## Configuration
 
@@ -228,6 +272,25 @@ See [docs/ml_model_card.md](docs/ml_model_card.md) for model details, performanc
 ## Security
 
 See [docs/security.md](docs/security.md) for authentication, authorization, and data protection guidelines.
+
+## Scripts
+
+### Install Script
+```bash
+./install.sh
+```
+Automated setup with health checks and service verification.
+
+### Uninstall Script
+```bash
+./uninstall.sh
+```
+Interactive clean removal with confirmations for:
+- Stopping services
+- Removing Docker volumes
+- Removing Docker images
+- Removing `.env` file
+- Docker system prune
 
 ## Testing
 
