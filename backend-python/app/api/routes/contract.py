@@ -6,6 +6,8 @@ from app.core.contract import (
     TableMapping,
     mapping_store,
 )
+from app.core.config import settings
+from app.services.bigquery_service import BigQueryService
 
 router = APIRouter(prefix="/contract")
 
@@ -35,8 +37,6 @@ async def set_mapping(table_id: str, mapping: TableMapping):
 
 @router.get("/mapping/{table_id}/resolve")
 async def resolve_mapping(table_id: str, limit: int = 100):
-    from app.services.bigquery_service import BigQueryService
-
-    service = BigQueryService()
+    service = BigQueryService(project_id=settings.project_id or None)
     sql = service.resolve_select(table_id, limit)
     return {"table_id": table_id, "sql": sql}
