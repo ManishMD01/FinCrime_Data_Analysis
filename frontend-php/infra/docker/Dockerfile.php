@@ -12,11 +12,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY composer.json composer.lock* ./
-RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts || true
-
 COPY . .
 
-RUN a2enmod rewrite
+RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts || true
+
+RUN a2enmod rewrite \
+    && sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf \
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 EXPOSE 80
 
